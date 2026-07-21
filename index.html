@@ -997,16 +997,16 @@ const AUDIENCE_COPY = {
 
 function setAudience(mode){
   currentAudience = mode;
-  audienceMeBtn.classList.toggle('active', mode === 'me');
-  audienceClientsBtn.classList.toggle('active', mode === 'clients');
+  if(audienceMeBtn) audienceMeBtn.classList.toggle('active', mode === 'me');
+  if(audienceClientsBtn) audienceClientsBtn.classList.toggle('active', mode === 'clients');
   const copy = AUDIENCE_COPY[mode];
-  businessLabel.textContent = copy.label;
-  businessInput.placeholder = copy.placeholder;
-  businessHintText.textContent = copy.hint;
+  if(businessLabel) businessLabel.textContent = copy.label;
+  if(businessInput) businessInput.placeholder = copy.placeholder;
+  if(businessHintText) businessHintText.textContent = copy.hint;
 }
 
-audienceMeBtn.addEventListener('click', () => setAudience('me'));
-audienceClientsBtn.addEventListener('click', () => setAudience('clients'));
+if(audienceMeBtn) audienceMeBtn.addEventListener('click', () => setAudience('me'));
+if(audienceClientsBtn) audienceClientsBtn.addEventListener('click', () => setAudience('clients'));
 
 let currentProfile = null;
 const loadingZone = document.getElementById('loading-zone');
@@ -1279,9 +1279,9 @@ select.addEventListener('change', () => {
   businessZone.classList.add('reveal');
 });
 
-generateBtn.addEventListener('click', handleGenerate);
+if(generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
-randomBtn.addEventListener('click', renderBonus);
+if(randomBtn) randomBtn.addEventListener('click', renderBonus);
 
 async function handleHobbyGenerate(){
   const hobby = hobbyInput.value.trim();
@@ -1352,8 +1352,8 @@ function renderHobbyResult(idea, hobby){
   hobbyResultZone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-hobbyBtn.addEventListener('click', handleHobbyGenerate);
-hobbyInput.addEventListener('keydown', (e) => {
+if(hobbyBtn) hobbyBtn.addEventListener('click', handleHobbyGenerate);
+if(hobbyInput) hobbyInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') handleHobbyGenerate();
 });
 
