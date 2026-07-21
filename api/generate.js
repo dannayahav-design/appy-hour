@@ -331,12 +331,31 @@ module.exports = async function handler(req, res) {
     const data = await anthropicResponse.json();
     const toolUseBlock = (data.content || []).find(block => block.type === 'tool_use' && block.name === 'return_ideas');
 
-    if (!toolUseBlock || !toolUseBlock.input || !Array.isArray(toolUseBlock.input.ideas)) {
-      console.error('generate.js: no valid tool_use block in response', JSON.stringify(data));
+    if (!toolUseBlock || !toolUseBlock.input) {
+      console.error('generate.js: no tool_use block in response', JSON.stringify(data));
       throw new Error('Unexpected response shape from the model.');
     }
 
-    const ideas = toolUseBlock.input.ideas.slice(0, 5).map(idea => ({
+    // Normally toolUseBlock.input.ideas is already an array, exactly matching
+    // the schema. Occasionally the model double-wraps its answer as a JSON
+    // *string* instead (e.g. input.ideas = '{"ideas":[...]}' as text rather
+    // than the array itself). This unwraps that case instead of failing.
+    let ideasArray = toolUseBlock.input.ideas;
+    if (typeof ideasArray === 'string') {
+      try {
+        const unwrapped = JSON.parse(ideasArray);
+        ideasArray = Array.isArray(unwrapped) ? unwrapped : unwrapped.ideas;
+      } catch (e) {
+        ideasArray = null;
+      }
+    }
+
+    if (!Array.isArray(ideasArray)) {
+      console.error('generate.js: could not extract an ideas array', JSON.stringify(data));
+      throw new Error('Unexpected response shape from the model.');
+    }
+
+    const ideas = ideasArray.slice(0, 5).map(idea => ({
       name: String(idea.name || '').trim(),
       desc: String(idea.desc || '').trim()
     }));
