@@ -1,0 +1,39 @@
+<!--
+  KAJABI EMBED — paste this whole block into a Custom Code Block on your page.
+
+  BEFORE PASTING:
+  Replace YOUR-VERCEL-URL below (in TWO places) with your actual deployed
+  Vercel URL — something like https://girls-and-their-apps.vercel.app
+  or your connected custom domain if you set one up.
+
+  HOW TO ADD THIS IN KAJABI:
+  1. Open the page in the Kajabi page builder.
+  2. Open a Section, click "Add block," choose "Custom Code."
+  3. Paste this entire snippet into the Code field.
+  4. Save.
+-->
+
+<div style="width:100%; max-width:960px; margin:0 auto;">
+  <iframe
+    id="gata-embed"
+    src="https://YOUR-VERCEL-URL.vercel.app"
+    style="width:100%; min-height:900px; border:none; display:block;"
+    scrolling="no"
+    title="Girls & Their Apps"
+  ></iframe>
+</div>
+
+<script>
+  window.addEventListener('message', function(event){
+    // Only trust resize messages coming from your own Vercel deployment.
+    // Replace the origin string below with your actual Vercel URL (no trailing slash).
+    if (event.origin !== 'https://YOUR-VERCEL-URL.vercel.app') return;
+
+    if (event.data && event.data.type === 'gata-resize' && event.data.height){
+      var frame = document.getElementById('gata-embed');
+      if (frame){
+        frame.style.height = event.data.height + 'px';
+      }
+    }
+  });
+</script>
