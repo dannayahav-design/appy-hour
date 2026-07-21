@@ -393,12 +393,6 @@
   #business-zone{
     max-width: 560px;
     margin: 28px auto 0;
-    opacity: 0;
-    transform: translateY(14px);
-  }
-
-  #business-zone.reveal{
-    animation: riseIn .55s cubic-bezier(.16,.84,.44,1) forwards;
   }
 
   .audience-toggle{
@@ -595,12 +589,14 @@
     font-family: 'Fraunces', serif;
     font-weight: 600;
     font-style: italic;
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.3;
+    max-width: 380px;
     color: var(--paper);
     background: var(--accent-deep);
     border: none;
     border-radius: 999px;
-    padding: 16px 34px;
+    padding: 16px 30px;
     cursor: pointer;
     box-shadow: 0 8px 20px rgba(183,79,124,0.28);
     transition: transform .15s ease, box-shadow .15s ease;
@@ -802,14 +798,10 @@
     </div>
   </header>
 
-  <div id="empty-state" class="empty-state">
-    <span class="glyph">＊</span>
-    Select your Profile above to get started.
-  </div>
-
   <div id="archetype-zone"></div>
 
   <div id="business-zone">
+    <p class="hobby-lead" style="margin-bottom:10px;">Tell us more, who is this app for? <span style="display:inline-block; transform:translateY(2px);">&#9660;</span></p>
     <div class="audience-toggle">
       <button type="button" class="audience-btn active" id="audience-me" data-audience="me">
         It's for me
@@ -825,16 +817,15 @@
       <textarea id="business-input" placeholder="e.g. I'm a nutrition coach for new moms. I mostly work over Instagram DMs and voice notes, and my clients are usually exhausted and overwhelmed."></textarea>
     </div>
     <p class="business-hint" id="business-hint-text">A sentence or two is plenty — the more specific, the better your menu turns out.</p>
-    <button type="button" id="generate-btn" class="generate-btn">🍹 Order My Custom Menu</button>
+    <button type="button" id="generate-btn" class="generate-btn">🍹 Order My Custom App</button>
   </div>
 
   <div id="loading-zone"></div>
   <div id="error-zone"></div>
   <div id="ideas-zone"></div>
 
-  <div id="random-zone" class="random-zone" style="display:none;">
-    <p>Still hungry?</p>
-    <button type="button" id="random-btn" class="random-btn">CLICK HERE to order a random app</button>
+  <div id="random-zone" class="random-zone">
+    <button type="button" id="random-btn" class="random-btn">🍹 I Trust You, Deliver Me a Random App Idea</button>
     <div id="bonus-zone"></div>
 
     <div class="hobby-shell">
@@ -1146,7 +1137,6 @@ function renderIdeas(profile, ideas, audience){
     });
   });
 
-  randomZone.style.display = 'block';
   ideasZone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -1231,7 +1221,11 @@ async function generateIdeas(profile, businessDesc, audience){
 }
 
 async function handleGenerate(){
-  if(!currentProfile) return;
+  if(!currentProfile){
+    showToast('Pick a Profile above first');
+    if(select) select.focus();
+    return;
+  }
   const businessDesc = businessInput.value.trim();
   if(businessDesc.length < 10){
     businessInput.focus();
@@ -1242,7 +1236,6 @@ async function handleGenerate(){
 
   ideasZone.innerHTML = '';
   errorZone.innerHTML = '';
-  randomZone.style.display = 'none';
   bonusZone.innerHTML = '';
   generateBtn.disabled = true;
   generateBtn.textContent = 'Cooking…';
@@ -1257,26 +1250,29 @@ async function handleGenerate(){
     showError();
   }finally{
     generateBtn.disabled = false;
-    generateBtn.textContent = '🍹 Order My Custom Menu';
+    generateBtn.textContent = '🍹 Order My Custom App';
   }
 }
 
 select.addEventListener('change', () => {
   const profile = PROFILES[+select.value];
   if(!profile) return;
+
+  // Core behavior first, guaranteed to run no matter what else on the page
+  // is missing or broken.
   currentProfile = profile;
-  emptyState.style.display = 'none';
-  ideasZone.innerHTML = '';
-  errorZone.innerHTML = '';
-  loadingZone.innerHTML = '';
-  bonusZone.innerHTML = '';
-  hobbyResultZone.innerHTML = '';
-  hobbyErrorZone.innerHTML = '';
-  hobbyInput.value = '';
-  randomZone.style.display = 'none';
-  businessInput.value = '';
   renderArchetype(profile);
-  businessZone.classList.add('reveal');
+
+  // Everything below just resets leftover results from a previous Profile.
+  // Each one is guarded so a missing element can never break the lines above.
+  if(ideasZone) ideasZone.innerHTML = '';
+  if(errorZone) errorZone.innerHTML = '';
+  if(loadingZone) loadingZone.innerHTML = '';
+  if(bonusZone) bonusZone.innerHTML = '';
+  if(hobbyResultZone) hobbyResultZone.innerHTML = '';
+  if(hobbyErrorZone) hobbyErrorZone.innerHTML = '';
+  if(hobbyInput) hobbyInput.value = '';
+  if(businessInput) businessInput.value = '';
 });
 
 if(generateBtn) generateBtn.addEventListener('click', handleGenerate);
