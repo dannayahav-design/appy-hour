@@ -205,7 +205,7 @@ VOICE AND FORMAT RULES — follow these exactly:
 6. No em dashes inside the desc other than the one right after the name-length problem statement, if needed for rhythm. Keep punctuation simple.
 7. Never use "she" or "her" — always use "you."
 
-Return ONLY a JSON array of exactly 5 objects, each with keys "name" and "desc". No markdown formatting, no code fences, no extra text before or after the JSON.`;
+Use the return_ideas tool to give your final 5 ideas.`;
 }
 
 function buildUserPrompt(profile, businessDesc, audience) {
@@ -287,11 +287,37 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: 1200,
+        max_tokens: 1500,
         system: buildSystemPrompt(cleanAudience),
         messages: [
           { role: 'user', content: buildUserPrompt(profile, cleanDesc, cleanAudience) }
-        ]
+        ],
+        tools: [
+          {
+            name: 'return_ideas',
+            description: 'Return the 5 generated app ideas.',
+            input_schema: {
+              type: 'object',
+              properties: {
+                ideas: {
+                  type: 'array',
+                  minItems: 5,
+                  maxItems: 5,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', description: '2-5 word app name' },
+                      desc: { type: 'string', description: 'One paragraph, 2-4 sentences' }
+                    },
+                    required: ['name', 'desc']
+                  }
+                }
+              },
+              required: ['ideas']
+            }
+          }
+        ],
+        tool_choice: { type: 'tool', name: 'return_ideas' }
       })
     });
 
@@ -303,19 +329,14 @@ module.exports = async function handler(req, res) {
     }
 
     const data = await anthropicResponse.json();
-    const textBlocks = (data.content || [])
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('');
+    const toolUseBlock = (data.content || []).find(block => block.type === 'tool_use' && block.name === 'return_ideas');
 
-    const cleaned = textBlocks.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+    if (!toolUseBlock || !toolUseBlock.input || !Array.isArray(toolUseBlock.input.ideas)) {
+      console.error('generate.js: no valid tool_use block in response', JSON.stringify(data));
       throw new Error('Unexpected response shape from the model.');
     }
 
-    const ideas = parsed.slice(0, 5).map(idea => ({
+    const ideas = toolUseBlock.input.ideas.slice(0, 5).map(idea => ({
       name: String(idea.name || '').trim(),
       desc: String(idea.desc || '').trim()
     }));
