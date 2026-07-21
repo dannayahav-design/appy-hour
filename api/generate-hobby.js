@@ -15,7 +15,7 @@ VOICE AND FORMAT RULES — follow these exactly:
 5. The idea must be impossible to swap onto a different hobby. If it could apply to literally any interest, it's too generic — throw it out and get more specific.
 6. Never use "she" or "her" — always use "you."
 
-Return ONLY a JSON object with keys "name" and "desc". No markdown formatting, no code fences, no extra text before or after the JSON.`;
+Use the return_idea tool to give your final answer.`;
 }
 
 function buildUserPrompt(hobby) {
@@ -62,11 +62,26 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: 400,
+        max_tokens: 500,
         system: buildSystemPrompt(),
         messages: [
           { role: 'user', content: buildUserPrompt(cleanHobby) }
-        ]
+        ],
+        tools: [
+          {
+            name: 'return_idea',
+            description: 'Return the one generated app idea.',
+            input_schema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: '2-5 word app name' },
+                desc: { type: 'string', description: 'One paragraph, 2-4 sentences' }
+              },
+              required: ['name', 'desc']
+            }
+          }
+        ],
+        tool_choice: { type: 'tool', name: 'return_idea' }
       })
     });
 
@@ -78,17 +93,16 @@ module.exports = async function handler(req, res) {
     }
 
     const data = await anthropicResponse.json();
-    const textBlocks = (data.content || [])
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('');
+    const toolUseBlock = (data.content || []).find(block => block.type === 'tool_use' && block.name === 'return_idea');
 
-    const cleaned = textBlocks.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    if (!toolUseBlock || !toolUseBlock.input) {
+      console.error('generate-hobby.js: no valid tool_use block in response', JSON.stringify(data));
+      throw new Error('Unexpected response shape from the model.');
+    }
 
     const idea = {
-      name: String(parsed.name || '').trim(),
-      desc: String(parsed.desc || '').trim()
+      name: String(toolUseBlock.input.name || '').trim(),
+      desc: String(toolUseBlock.input.desc || '').trim()
     };
 
     if (!idea.name || !idea.desc) {
